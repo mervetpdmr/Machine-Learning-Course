@@ -1,0 +1,113 @@
+---
+title: "Homework - Week 4"
+author: "Merve Topdemir"
+date: "26 03 2021"
+output: word_document
+---
+
+```{r}
+data <-read.csv("C:/Users/Merve/Desktop/drug200.csv",header =TRUE)
+data$Drug <-as.factor(data$Drug)
+data$Sex <-as.factor(data$Sex)
+data$BP <-as.factor(data$BP)
+data$Cholesterol <-as.factor(data$Cholesterol)
+head(data,10)
+```
+
+
+```{r}
+table(data$Drug)
+```
+
+
+```{r}
+str(data)
+summary(data)
+```
+
+
+```{r}
+data$Drug <- relevel(data$Drug, ref = "drugX")
+#install.packages("nnet")
+library(nnet)
+model <- multinom(Drug ~ ., data = data, trace = FALSE)
+summary(model)
+
+```
+
+
+```{r}
+z <- summary(model)$coefficients/summary(model)$standard.errors
+p <- (1 - pnorm(abs(z), 0, 1)) * 2
+p
+```
+
+
+```{r}
+exp(coef(model))
+      
+```
+
+
+```{r}
+predicted_probs <- predict(model, type = "probs")
+head(predicted_probs,10)
+
+```
+```{r}
+max<-colnames(predicted_probs)[apply(predicted_probs, 1,which.max)]
+head(max,10)
+```
+
+
+```{r}
+set.seed(123)
+index <- sample(nrow(data), nrow(data) * 0.8)
+train <- data[index,]
+test <- data[-index,]
+
+```
+
+
+```{r}
+table(train$Drug)
+```
+
+
+```{r}
+table(test$Drug)
+```
+
+
+```{r}
+model1 <- multinom(Drug ~ ., data = train, trace = FALSE)
+summary(model1)
+```
+
+```{r}
+predicted_probs_train <- predict(model1, type = "probs")
+predicted_class_train <- colnames(predicted_probs_train)[apply(predicted_probs_train, 1,which.max)]
+mean(predicted_class_train == train$Drug)
+```
+
+
+```{r}
+predicted_probs_test <- predict(model1, test, type = "probs")
+predicted_class_test <- colnames(predicted_probs_test)[apply(
+predicted_probs_test, 1, which.max)]
+mean(predicted_class_test == test$Drug)
+```
+
+
+```{r}
+confmatr <- table(predicted = predicted_class_test, actual = test$Drug)
+confmatr
+
+```
+
+
+```{r}
+accuracy <- sum(diag(confmatr)) / sum(confmatr)
+accuracy
+
+```

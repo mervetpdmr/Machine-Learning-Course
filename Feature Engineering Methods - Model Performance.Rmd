@@ -1,0 +1,275 @@
+---
+title: "Homework - Week 5"
+author: "Merve Topdemir"
+date: "08 04 2021"
+output: word_document
+---
+```{r}
+#install.packages("tidymodels")
+library(tidymodels)
+
+#install.packages("catdata")
+library(catdata)
+data("heart")
+data <- heart
+head(data,5)
+?heart
+```
+
+
+```{r}
+data=data.frame(data)
+data$y=as.factor(data$y)
+data$famhist=as.factor(data$famhist)
+str(data)
+```
+
+
+```{r}
+summary(data)
+```
+
+
+```{r}
+#install.packages("dplyr")
+library(dplyr)
+
+set.seed(123) # for reproducebility
+# data splitting
+split <- initial_split(data, prop = 0.80, strata = y)
+
+# creating train set
+train <- split %>%
+training()
+
+# creating test set
+test <- split %>%
+testing()
+
+table(train$y)
+table(test$y)
+
+```
+
+
+```{r}
+logistic_model <- logistic_reg() %>%
+set_engine('glm') %>% set_mode('classification')
+
+# Fitting a linear regression model
+logistic_fit <- logistic_model %>%
+fit(y ~ ., data = train)
+
+# Obtaining the estimated parameters
+tidy(logistic_fit)
+
+```
+
+
+```{r}
+#For Train
+
+# Estimated labels
+labels_train <- logistic_fit %>%
+predict(new_data = train , type = 'class')
+head(labels_train,5)
+
+```
+
+
+```{r}
+# Estimated probabilities
+preds_train <- logistic_fit %>%
+predict(new_data = train, type = 'prob')
+head(preds_train, 5)
+```
+
+
+```{r}
+result_train <- train %>%
+dplyr::select(y) %>%
+bind_cols(preds_train,labels_train)
+head(result_train,5)
+```
+
+
+```{r}
+conf_mat(result_train, truth = y, estimate = .pred_class)
+```
+
+
+```{r}
+conf_mat(result_train, truth = y, estimate = .pred_class) %>%
+summary()
+```
+
+
+```{r}
+conf_mat(result_train, truth = y, estimate = .pred_class) %>%
+autoplot(type = 'mosaic')
+```
+
+
+```{r}
+# Visualizing performance across thresholds
+result_train %>%
+roc_curve(truth = y, estimate = .pred_0) %>%
+autoplot()
+```
+
+
+```{r}
+# Calculating ROC AUC
+roc_auc(result_train, truth = y, .pred_0)
+```
+
+
+```{r}
+#For Test
+
+# Estimated labels
+labels_test <- logistic_fit %>%
+predict(new_data = test , type = 'class')
+head(labels_test,5)
+
+```
+
+
+```{r}
+# Estimated probabilities
+preds_test <- logistic_fit %>%
+predict(new_data = test, type = 'prob')
+head(preds_test, 5)
+```
+
+
+```{r}
+result_test <- test %>%
+dplyr::select(y) %>%
+bind_cols(preds_test,labels_test)
+head(result_test,5)
+```
+
+
+```{r}
+conf_mat(result_test, truth = y, estimate = .pred_class)
+```
+
+
+```{r}
+conf_mat(result_test, truth = y, estimate = .pred_class) %>%
+summary()
+```
+
+
+```{r}
+conf_mat(result_test, truth = y, estimate = .pred_class) %>%
+autoplot(type = 'mosaic')
+```
+
+
+```{r}
+# Visualizing performance across thresholds
+result_test %>%
+roc_curve(truth = y, estimate = .pred_0) %>%
+autoplot()
+```
+
+
+```{r}
+# Calculating ROC AUC
+roc_auc(result_test, truth = y, .pred_0)
+```
+
+
+```{r}
+accuracy(result_test, truth = y, estimate = .pred_class)
+```
+
+
+```{r}
+#!!! Feature Engineering !!!!
+
+# creating a recipe object
+data_recipe <- recipe(y ~ ., data = train) %>%
+  
+# Removed correlated predictors
+step_corr(all_numeric(), threshold = 0.8) %>%
+  
+# Normalize numeric predictors
+step_normalize(all_numeric()) %>%
+  
+# Create dummy variables
+step_dummy(all_nominal(), -all_outcomes())
+
+# Train recipe
+data_recipe_prep <- data_recipe %>%
+prep(training = train)
+
+# Transform training data
+data_train_prep <- data_recipe_prep %>%
+bake(new_data = train)
+
+# Transform test data
+data_test_prep <- data_recipe_prep %>%
+bake(new_data = test)
+
+```
+
+
+```{r}
+# Train logistic model
+logistic_fit <- logistic_model %>%
+fit(y ~., data = data_train_prep)
+
+# Obtain class predictions
+class_preds_test <- predict(logistic_fit, new_data = data_test_prep, type = 'class')
+
+# Obtain estimated probabilities
+prob_preds_test <- predict(logistic_fit, new_data = data_test_prep, type = 'prob')
+
+# Combine test set results
+result_feature <- data_test_prep %>%
+dplyr::select(y) %>%
+bind_cols(class_preds_test, prob_preds_test)
+head(result_feature,5)
+
+
+```
+
+
+```{r}
+# calculating accuracy of the model
+accuracy(result_feature, truth = y, estimate = .pred_class)
+# calculating sensivity of the model
+sens(result_feature, truth = y, estimate = .pred_class)
+# calculating specificity of the model
+spec(result_feature, truth = y, estimate = .pred_class)
+
+```
+
+
+```{r}
+# Obtain class predictions
+class_preds_train <- predict(logistic_fit, new_data = data_train_prep, type = 'class')
+
+# Obtain estimated probabilities
+prob_preds_train <- predict(logistic_fit, new_data = data_train_prep, type = 'prob')
+
+# Combine test set results
+result_feature2 <- data_train_prep %>%
+dplyr::select(y) %>%
+bind_cols(class_preds_train, prob_preds_train)
+head(result_feature2,5)
+```
+
+
+```{r}
+# calculating accuracy of the model
+accuracy(result_feature2, truth = y, estimate = .pred_class)
+# calculating sensivity of the model
+sens(result_feature2, truth = y, estimate = .pred_class)
+# calculating specificity of the model
+spec(result_feature2, truth = y, estimate = .pred_class)
+
+```

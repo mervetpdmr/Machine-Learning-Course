@@ -1,0 +1,123 @@
+---
+title: "Homework - Week 3"
+author: "Merve Topdemir"
+date: "20 03 2021"
+output: word_document
+---
+
+```{r}
+#install.packages("mlbench") #To install the data package
+library(mlbench)
+data(PimaIndiansDiabetes) #for calling the data from mlbench
+head(PimaIndiansDiabetes,10)
+
+```
+
+
+```{r}
+#To see the rate of diabetes variable which is categorical
+
+table <- table(PimaIndiansDiabetes$diabetes) 
+table
+
+```
+
+
+```{r}
+#summary() function gives you a simple summary of each of the variables on the PimaIndiansDiabetes data
+
+summary(PimaIndiansDiabetes)
+
+```
+
+
+```{r}
+#Use the glm () function to create a logistic regression model
+
+model <- glm(diabetes ~ pregnant + glucose + pressure + triceps + insulin + mass + pedigree + age, data = PimaIndiansDiabetes, family = "binomial")
+summary(model)
+             
+```
+
+
+```{r}
+exp(coef(model))
+
+```
+
+
+```{r}
+set.seed(123)
+index <- sample(nrow(PimaIndiansDiabetes), nrow(PimaIndiansDiabetes) * 0.8)
+train <- PimaIndiansDiabetes[index,]
+test  <- PimaIndiansDiabetes[-index,]
+
+```
+
+
+```{r}
+table(train$diabetes)
+
+```
+
+
+```{r}
+table(test$diabetes)
+
+```
+
+
+```{r}
+model1 <- glm(diabetes ~ pregnant + glucose + pressure + triceps + insulin + mass + pedigree + age, data = train, family = "binomial")
+summary(model1)
+
+```
+
+```{r}
+predicted_probs_train <- predict(model,train,type ="response" )
+summary(predicted_probs_train)
+
+```
+
+
+```{r}
+head(round(predicted_probs_train,3),10)
+predicted_class_train <- ifelse ( predicted_probs_train > 0.5,"pos","neg" )
+head(predicted_class_train,10)
+```
+
+```{r}
+mean(predicted_class_train==train$diabetes)
+
+```
+
+
+```{r}
+predicted_probs_test <- predict(model1,test,type ="response" )
+summary(predicted_probs_test)
+```
+
+
+```{r}
+head(round(predicted_probs_test,3),10)
+predicted_class_test <- ifelse ( predicted_probs_test > 0.5,"pos","neg" )
+head(predicted_class_test,10)
+```
+
+
+```{r}
+mean(predicted_class_test == test$diabetes)
+
+```
+
+
+```{r}
+table(predicted = predicted_class_test, actual=test$diabetes)
+
+```
+
+
+```{r}
+table(test$diabetes)
+
+```

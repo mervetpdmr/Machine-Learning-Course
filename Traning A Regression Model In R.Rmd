@@ -1,0 +1,102 @@
+---
+title: "Homework-Week 2"
+author: "Merve Topdemir"
+date: "12 03 2021"
+output: word_document
+---
+
+```{r}
+#install.packages("AER")
+library(AER)
+data("PhDPublications")
+
+```
+
+```{r}
+set.seed(123)
+index <- sample(nrow(PhDPublications), nrow(PhDPublications) * 0.8)
+train <- PhDPublications[index,]
+test <- PhDPublications[-index,]
+
+```
+
+```{r}
+nrow(train)
+
+```
+
+```{r}
+nrow(test)
+
+```
+
+```{r}
+#install.packages("dplyr")
+library(dplyr)
+glimpse(PhDPublications)
+
+```
+
+```{r}
+model <- lm(articles ~ factor(gender)+factor(married)+kids+prestige+mentor,data = train)
+summary(model)
+
+```
+
+```{r}
+predicted_train <- predict(model, train)
+modelEvaluation <- data.frame(train$articles,predicted_train)
+colnames(modelEvaluation) <- c('Actual','Predicted_train')
+head(modelEvaluation, 10)
+
+```
+
+```{r}
+mse_train <- mean((modelEvaluation$Actual - modelEvaluation$Predicted_train) ^ 2)
+mse_train
+
+```
+
+```{r}
+rmse_train <- sqrt(mse_train)
+rmse_train
+
+```
+
+```{r}
+mae_train <- mean(abs(modelEvaluation$Actual - modelEvaluation$Predicted_train))
+mae_train
+```
+
+
+```{r}
+predicted_test <- predict(model, test)
+modelEvaluation2 <- data.frame(test$articles, predicted_test)
+colnames(modelEvaluation2) <- c('Actual','Predicted_test')
+head(modelEvaluation2, 10)
+
+```
+
+```{r}
+mse_test <- mean((modelEvaluation2$Actual - modelEvaluation2$Predicted_test) ^ 2)
+mse_test
+
+```
+
+```{r}
+rmse_test <- sqrt(mse_test)
+rmse_test
+
+```
+
+```{r}
+mae_test <- mean(abs(modelEvaluation2$Actual - modelEvaluation2$Predicted_test))
+mae_test
+```
+
+```{r}
+df<- data.frame("MSE"=c(mse_train,mse_test),"RMSE"=c(rmse_train,rmse_test),"MAE"=c(mae_train,mae_test),row.names=c("train","test"))
+df<-round(df,2)
+df
+
+```
