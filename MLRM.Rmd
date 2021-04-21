@@ -1,0 +1,109 @@
+---
+title: "Part1"
+author: "Merve Topdemir"
+date: "16 04 2021"
+output: word_document
+---
+
+```{r}
+#install.packages("DALEX") 
+library(DALEX)
+data <- DALEX::HR 
+data$evaluation <-as.factor(data$evaluation) 
+data$salary <-as.factor(data$salary) 
+head(data)
+```
+
+
+```{r}
+table(data$status)
+```
+
+
+```{r}
+str(data)
+
+```
+```{r}
+summary(data)
+```
+
+```{r}
+#Splitting Data
+set.seed(1408) 
+index <- sample(nrow(data),nrow(data)*0.8) 
+train <- data[index,]
+test <- data[-index,] 
+table(train$status);table(test$status)
+```
+
+```{r}
+#Training a MLRM
+train$status <- relevel(train$status, ref = "ok")
+#install.packages("nnet")
+library(nnet)
+model <- multinom(status ~ ., data =train , trace = FALSE)
+summary(model)
+
+```
+
+
+```{r}
+#Significance of the features
+z <- summary(model)$coefficients/summary(model)$standard.errors
+p <- (1 - pnorm(abs(z), 0, 1)) * 2
+p
+```
+
+
+```{r}
+exp(coef(model))
+      
+```
+
+
+```{r}
+predicted_probs <- predict(model, type = "probs")
+head(predicted_probs)
+
+```
+
+```{r}
+#Performance of the Model on Train and Test Set:
+
+#For TRAIN
+predicted_probs_train <- predict(model, type = "probs")
+predicted_class_train <- colnames(predicted_probs_train)[apply(predicted_probs_train, 1,which.max)]
+print(c("Train:", mean(predicted_class_train == train$status)))
+
+#For TEST
+predicted_probs_test <- predict(model, test, type = "probs")
+predicted_class_test <- colnames(predicted_probs_test)[apply(predicted_probs_test, 1, which.max)]
+print(c("Test:", mean(predicted_class_test == test$status)))
+
+
+```
+```{r}
+#install.packages("e1071")
+library(e1071)
+#install.packages("caret")
+library(caret)
+confusionMatrix(
+factor(predicted_class_test, levels = c("fired","ok","promoted")),
+factor(test$status, levels = c("fired","ok","promoted"))
+)
+```
+
+
+
+```{r}
+confmatr <- table(predicted = predicted_class_test, actual = test$status)
+confmatr
+```
+
+
+```{r}
+accuracy <- sum(diag(confmatr)) / sum(confmatr)
+accuracy
+
+```

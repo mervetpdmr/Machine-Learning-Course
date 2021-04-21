@@ -1,0 +1,84 @@
+---
+title: "Part2"
+author: "Merve Topdemir"
+date: "16 04 2021"
+output: word_document
+---
+
+```{r}
+#install.packages("DALEX") 
+library(DALEX)
+#install.packages("rpart")
+library(rpart)
+#install.packages("rpart.plot")
+library(rpart.plot)
+```
+
+```{r}
+data <- DALEX::HR 
+data$evaluation <-as.factor(data$evaluation) 
+data$salary <-as.factor(data$salary) 
+head(data)
+```
+
+```{r}
+str(data)
+```
+
+```{r}
+# target variable's class
+table(data$status)
+```
+```{r}
+model <- rpart(status ~ ., data = data, method = "class")
+rpart.plot(model)
+
+```
+
+```{r}
+# data splitting
+set.seed(1408)
+index <- sample(nrow(data), nrow(data) * 0.8)
+train <- data[index,]
+test <- data[-index,]
+table(train$status)
+table(test$status)
+```
+```{r}
+
+model <- rpart(status ~., method = "class", data = train)
+
+pred_labels <- predict(model, test, type = "class")
+conf_mat <- table(pred_labels, test$status)
+sum(diag(conf_mat))/sum(conf_mat)
+
+```
+```{r}
+
+model <- rpart(status ~., method = "class", data = train)
+
+#For train
+pred_labels_train <- predict(model, train, type = "class")
+conf_mat_train <- table(pred_labels_train, train$status)
+print(c("Train:",sum(diag(conf_mat_train))/sum(conf_mat_train)))
+
+#For test
+pred_labels_test <- predict(model, test, type = "class")
+conf_mat_test <- table(pred_labels_test, test$status)
+print(c("Test:",sum(diag(conf_mat_test))/sum(conf_mat_test)))
+
+```
+
+```{r}
+#install.packages("e1071")
+library(e1071)
+#install.packages("caret")
+library(caret)
+confusionMatrix(
+factor(pred_labels_test, levels = c("fired","ok","promoted")),
+factor(test$status, levels = c("fired","ok","promoted"))
+)
+
+```
+
+
