@@ -1,0 +1,111 @@
+---
+title: "Homework - Week 7"
+author: "Merve Topdemir"
+date: "22 04 2021"
+output:
+  word_document: default
+  html_document: default
+---
+
+```{r}
+#install.packages("DALEX")
+library(DALEX)
+data<-dragons
+head(data,10)
+
+```
+
+```{r}
+str(data)
+```
+
+```{r}
+summary(data)
+```
+
+```{r}
+set.seed(123)
+index <- sample(nrow(data), nrow(data) * 0.8)
+train <- data[index,]
+test <- data[-index,]
+nrow(train)
+nrow(test)
+```
+
+
+```{r}
+model <- lm(life_length  ~., data = train)
+summary(model)
+
+```
+
+```{r}
+predicted_test <- predict(model, test)
+rmse_test <- sqrt(mean((predicted_test - test$life_length) ^ 2))
+
+predicted_train <- predict(model, train)
+rmse_train <-sqrt(mean((predicted_train - train$life_length) ^ 2))
+
+cat("test_rmse:", rmse_test,"\n")
+
+cat("train_rmse:", rmse_train)
+
+
+
+```
+
+
+
+
+```{r}
+#Decision Tree : Regression
+
+# Splitting of the data
+
+#install.packages("caret")
+library(caret)
+
+set.seed(123)
+index <- createDataPartition(data$life_length , p = 0.8, list = FALSE, times = 1)
+train <- data[index,]
+test <- data[-index,]
+dim(train)
+dim(test)
+
+
+```
+
+
+```{r}
+# Training a regression tree on the apartments data
+library(rpart)
+library(rpart.plot)
+model2 <- rpart(life_length  ~. , method = "anova", data = train)
+rpart.plot(model2)
+
+```
+
+```{r}
+# Performance of the trained tree on the train and test set
+
+predicted_test_dt <- predict(model2, test)
+rmse_test_dt <- sqrt(mean((predicted_test_dt - test$life_length) ^ 2))
+
+predicted_train_dt <- predict(model2, train)
+rmse_train_dt <- sqrt(mean((predicted_train_dt - train$life_length) ^ 2))
+
+cat("test_rmse_dt:", rmse_test_dt,"\n")
+
+cat("train_rmse_dt:", rmse_train_dt)
+
+
+```
+
+```{r}
+
+df<- data.frame("RMSE"=c(rmse_train,rmse_test,rmse_train_dt,rmse_test_dt),
+row.names=c("Regression Model(Train)","Regression Model(Test)","Decision  Tree(Train)","Decision Tree(Test)"))
+df<-round(df,2)
+df
+
+```
